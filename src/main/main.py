@@ -7,7 +7,6 @@ conn = sqlite3.connect(':memory:')
 # A cursor object to execute SQL commands
 cursor = conn.cursor()
 
-
 def main():
 
     # users table
@@ -43,32 +42,62 @@ def main():
     conn.close()
 
 
+
 # TODO: Implement the following 4 functions. The functions must pass the unit tests to complete the project.
 
 
 # This function will load the users.csv file into the users table, discarding any records with incomplete data
 def load_and_clean_users(file_path):
-
-    print("TODO: load_users")
+    with open(file_path, newline='') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header row
+        
+        for row in reader:
+            if len(row) < 3 or not all(row):
+                continue  # Skip incomplete records
+            cursor.execute("INSERT INTO users (userId, firstName, lastName) VALUES (?, ?, ?)", 
+                           (int(row[0]), row[1], row[2]))
+    conn.commit()
 
 
 # This function will load the callLogs.csv file into the callLogs table, discarding any records with incomplete data
 def load_and_clean_call_logs(file_path):
-
-    print("TODO: load_call_logs")
+    with open(file_path, newline='') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip header row
+        
+        for row in reader:
+            if len(row) < 6 or not all(row):
+                continue  # Skip incomplete records
+            cursor.execute("INSERT INTO callLogs (callId, phoneNumber, startTime, endTime, direction, userId) VALUES (?, ?, ?, ?, ?, ?)",
+                           (int(row[0]), row[1], int(row[2]), int(row[3]), row[4], int(row[5])))
+    conn.commit()
 
 
 # This function will write analytics data to testUserAnalytics.csv - average call time, and number of calls per user.
 # You must save records consisting of each userId, avgDuration, and numCalls
 # example: 1,105.0,4 - where 1 is the userId, 105.0 is the avgDuration, and 4 is the numCalls.
 def write_user_analytics(csv_file_path):
+        cursor.execute('''SELECT userId, AVG(endTime - startTime) AS avgDuration, COUNT(*) AS numCalls FROM callLogs GROUP BY userId''')
+        rows = cuseor.fetchall()
 
-    print("TODO: write_user_analytics")
-
+        with open(csv_file_path, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["userId", "avgDuration", "numCalls"])
+        for row in rows:
+            writer.writerow(row)
 
 # This function will write the callLogs ordered by userId, then start time.
 # Then, write the ordered callLogs to orderedCalls.csv
 def write_ordered_calls(csv_file_path):
+    cursor.execute('''SELECT * FROM callLogs ORDER BY userId, startTime''')
+    rows = cursor.fetchall()
+    
+    with open(csv_file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["callId", "phoneNumber", "startTime", "endTime", "direction", "userId"])
+        for row in rows:
+            writer.writerow(row)
 
     print("TODO: write_ordered_calls")
 
@@ -80,7 +109,7 @@ def write_ordered_calls(csv_file_path):
 def select_from_users_and_call_logs():
 
     print()
-    print("PRINTING DATA FROM USERS")
+    print("\nPRINTING DATA FROM USERS")
     print("-------------------------")
 
     # Select and print users data
@@ -90,7 +119,7 @@ def select_from_users_and_call_logs():
 
     # new line
     print()
-    print("PRINTING DATA FROM CALLLOGS")
+    print("\nPRINTING DATA FROM CALLLOGS")
     print("-------------------------")
 
     # Select and print callLogs data
@@ -103,5 +132,5 @@ def return_cursor():
     return cursor
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
